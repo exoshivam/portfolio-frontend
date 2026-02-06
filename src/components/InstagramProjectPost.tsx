@@ -52,7 +52,7 @@ export default function InstagramProjectPost({ project, onClose }: InstagramProj
     try {
       setIsLoadingComments(true);
       const response = await fetch(
-        `http://localhost:5000/api/projects/${project._id || project.id}/comments`
+        `https://portfolio-backend-zphz.onrender.com/api/projects/${project._id || project.id}/comments`
       );
       if (response.ok) {
         const data = await response.json();
@@ -84,7 +84,7 @@ export default function InstagramProjectPost({ project, onClose }: InstagramProj
     setIsPostingComment(true);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/projects/${project._id || project.id}/comments`,
+        `https://portfolio-backend-zphz.onrender.com/api/projects/${project._id || project.id}/comments`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -112,7 +112,7 @@ export default function InstagramProjectPost({ project, onClose }: InstagramProj
     if (!user) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/comments/${commentId}`, {
+      const response = await fetch(`https://portfolio-backend-zphz.onrender.com/api/comments/${commentId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id })
@@ -129,7 +129,7 @@ export default function InstagramProjectPost({ project, onClose }: InstagramProj
   // Use the actual project images from the array
   const images = project.image_urls && project.image_urls.length > 0 
     ? project.image_urls 
-    : ['http://localhost:5000/uploads/projects/placeholder.png'];
+    : ['https://portfolio-backend-zphz.onrender.com/uploads/projects/placeholder.png'];
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -150,7 +150,7 @@ export default function InstagramProjectPost({ project, onClose }: InstagramProj
     try {
       const action = liked ? 'unlike' : 'like';
       const response = await fetch(
-        `http://localhost:5000/api/projects/${project._id || project.id}/like`,
+        `https://portfolio-backend-zphz.onrender.com/api/projects/${project._id || project.id}/like`,
         { 
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
