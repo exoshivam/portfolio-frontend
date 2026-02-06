@@ -89,7 +89,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
               <div className="w-full h-full rounded-full bg-black"></div>
             </div>
             <img
-              src={profile.avatar_url || 'https://portfolio-backend-zphz.onrender.com/public/uploads/avatar/profile.png?auto=compress&cs=tinysrgb&w=400'}
+              src={'https://portfolio-backend-zphz.onrender.com/public/uploads/avatar/profile.png'}
               alt={profile.full_name}
               className="relative rounded-full w-32 h-32 md:w-40 md:h-40 object-cover border-2 border-transparent" style={{ objectPosition: '20% 0%' }}
             />
