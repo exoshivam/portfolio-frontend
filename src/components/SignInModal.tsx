@@ -26,7 +26,7 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
         ? { username, email, password }
         : { email, password };
 
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`https://portfolio-backend-zphz.onrender.com${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
