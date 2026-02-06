@@ -39,7 +39,7 @@ export interface Project {
   created_at: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = 'https://portfolio-backend-zphz.onrender.com/api';
 
 // Fetch all profiles
 export async function getProfile(): Promise<Profile | null> {
