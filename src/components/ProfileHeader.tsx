@@ -35,7 +35,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
   useEffect(() => {
     const fetchActiveProjects = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/active-projects');
+        const response = await fetch('https://portfolio-backend-zphz.onrender.com/api/active-projects');
         if (response.ok) {
           const data = await response.json();
           setActiveProjects(data);
@@ -53,7 +53,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
     if (showActiveProjects) {
       const fetchActiveProjects = async () => {
         try {
-          const response = await fetch('http://localhost:5000/api/active-projects');
+          const response = await fetch('https://portfolio-backend-zphz.onrender.com/api/active-projects');
           if (response.ok) {
             const data = await response.json();
             setActiveProjects(data);
