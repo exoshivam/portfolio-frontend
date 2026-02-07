@@ -95,27 +95,27 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-black border border-gray-300 dark:border-gray-800 rounded-2xl max-w-4xl w-full my-8"
+        className="bg-white dark:bg-black border border-gray-300 dark:border-gray-800 rounded-2xl max-w-4xl w-full my-2 sm:my-8 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-300 dark:border-gray-800">
+        <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-gray-300 dark:border-gray-800 bg-white dark:bg-black rounded-t-2xl">
           <div className="flex items-center gap-4">
-            <div className="inline-block p-3 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full">
-              <Mail size={24} />
+            <div className="inline-block p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full">
+              <Mail size={20} className="sm:w-6 sm:h-6" />
             </div>
-            <h1 className="text-2xl font-light text-black dark:text-white">Get In Touch</h1>
+            <h1 className="text-xl sm:text-2xl font-light text-black dark:text-white">Get In Touch</h1>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-900 rounded-lg transition-colors text-black dark:text-white"
+            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-900 rounded-lg transition-colors text-black dark:text-white flex-shrink-0"
           >
-            <X size={24} />
+            <X size={20} className="sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 grid md:grid-cols-2 gap-8">
+        <div className="p-4 sm:p-6 grid md:grid-cols-2 gap-8 overflow-y-auto flex-1">
           {/* Left - Contact Info */}
           <div className="space-y-8">
             <div>
