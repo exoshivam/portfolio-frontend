@@ -95,27 +95,27 @@ export default function SettingsModal({ isOpen, onClose, onThemeChange }: Settin
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl max-w-2xl w-full my-8"
+        className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl max-w-2xl w-full my-2 sm:my-8 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
+        <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-black rounded-t-2xl">
           <div className="flex items-center gap-4">
-            <div className="inline-block p-3 accent-gradient rounded-full">
-              <Settings size={24} />
+            <div className="inline-block p-2 sm:p-3 accent-gradient rounded-full">
+              <Settings size={20} className="sm:w-6 sm:h-6" />
             </div>
-            <h1 className="text-2xl font-light text-black dark:text-white">Settings</h1>
+            <h1 className="text-xl sm:text-2xl font-light text-black dark:text-white">Settings</h1>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg transition-colors flex-shrink-0"
           >
-            <X size={24} />
+            <X size={20} className="sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-8">
+        <div className="p-4 sm:p-6 space-y-8 overflow-y-auto flex-1">
           {/* Dark/Light Mode */}
           <div>
             <div className="flex items-center justify-between mb-4">
