@@ -72,7 +72,7 @@ export default function SettingsModal({ isOpen, onClose, onThemeChange }: Settin
 
   const handleDownloadResume = () => {
     // Create a simple download link - replace with actual resume URL
-    const resumeUrl = '/resume.pdf';
+    const resumeUrl = 'https://portfolio-backend-zphz.onrender.com/public/uploads/projects/resume.pdf';
     const link = document.createElement('a');
     link.href = resumeUrl;
     link.download = 'resume.pdf';
