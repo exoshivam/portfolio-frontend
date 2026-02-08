@@ -120,7 +120,7 @@ function App() {
         {/* Download Resume Icon and Sign In / Logout Button - Top Right - Desktop Only */}
         <div className="hidden lg:flex fixed top-6 right-6 z-40 items-center gap-4">
           <a
-            href="https://portfolio-backend-zphz.onrender.com/public/uploads/projects/resume.pdf"
+            href="https://portfolio-backend-zphz.onrender.com/download/resume"
             download
             className="p-2 text-orange-500 hover:text-orange-400 transition-colors hover:scale-110 transform"
             title="Download Resume"
