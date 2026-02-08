@@ -84,7 +84,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
     { icon: Instagram, label: 'Instagram', href: 'https://instagram.com/_exo_shivam', color: 'from-purple-500 to-pink-500' },
     { icon: Github, label: 'GitHub', href: 'https://github.com/exoshivam', color: 'from-gray-700 to-gray-900' },
     { icon: Linkedin, label: 'LinkedIn', href: 'https://linkedin.com/in/shivam-yadav2106', color: 'from-blue-600 to-blue-800' },
-    { icon: Twitter, label: 'Twitter', href: 'https://twitter.com', color: 'from-blue-400 to-blue-600' },
+    { icon: Twitter, label: 'Twitter', href: 'https://x.com/shivam_yad32254', color: 'from-blue-400 to-blue-600' },
   ];
 
   if (!isOpen) return null;
@@ -128,7 +128,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   <div>
                     <div className="text-gray-600 dark:text-gray-400 text-sm mb-1">Email</div>
                     <a href="mailto:contact@example.com" className="text-black dark:text-white hover:text-pink-600 dark:hover:text-pink-400 transition-colors">
-                      contact@example.com
+                      meetskymau@gmail.com
                     </a>
                   </div>
                 </div>
@@ -151,7 +151,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   </div>
                   <div>
                     <div className="text-gray-600 dark:text-gray-400 text-sm mb-1">Location</div>
-                    <div className="text-black dark:text-white">San Francisco, CA</div>
+                    <div className="text-black dark:text-white">Sector 62, Noida</div>
                   </div>
                 </div>
               </div>
