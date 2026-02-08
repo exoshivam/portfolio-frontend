@@ -117,7 +117,7 @@ export default function Sidebar({ isLoggedIn, activeTab, onTabChange, onModalClo
         {/* Download and Auth Buttons - Mobile Only */}
         <div className="lg:hidden p-6 border-t border-gray-200 dark:border-gray-800 space-y-3">
           <a
-            href="https://portfolio-backend-zphz.onrender.com/public/uploads/projects/resume.pdf"
+            href="https://portfolio-backend-zphz.onrender.com/download/resume"
             download
             className="w-full flex items-center justify-center gap-2 p-2.5 text-orange-500 hover:text-orange-400 transition-colors border border-orange-500 rounded-lg hover:bg-orange-500/10"
             title="Download Resume"
