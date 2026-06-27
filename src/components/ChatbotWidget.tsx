@@ -48,7 +48,7 @@ export default function ChatbotWidget() {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://portfolio-backend-zphz.onrender.com/api';
       const response = await fetch(`${apiBaseUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
