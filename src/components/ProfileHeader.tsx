@@ -35,7 +35,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
   useEffect(() => {
     const fetchActiveProjects = async () => {
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://portfolio-backend-zphz.onrender.com/api';
         const response = await fetch(`${apiBaseUrl}/active-projects`);
         if (response.ok) {
           const data = await response.json();
@@ -54,7 +54,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
     if (showActiveProjects) {
       const fetchActiveProjects = async () => {
         try {
-          const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+          const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://portfolio-backend-zphz.onrender.com/api';
           const response = await fetch(`${apiBaseUrl}/active-projects`);
           if (response.ok) {
             const data = await response.json();
@@ -91,7 +91,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
               <div className="w-full h-full rounded-full bg-black"></div>
             </div>
             <img
-              src={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000'}/public/uploads/avatar/profile.png`}
+              src={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'https://portfolio-backend-zphz.onrender.com'}/public/uploads/avatar/profile.png`}
               alt={profile.full_name}
               className="relative rounded-full w-32 h-32 md:w-40 md:h-40 object-cover border-2 border-transparent" style={{ objectPosition: '20% 0%' }}
             />
