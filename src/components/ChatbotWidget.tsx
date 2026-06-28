@@ -137,23 +137,15 @@ export default function ChatbotWidget() {
               playsInline
               className="chatbot-header-video"
             />
-            <span className="chatbot-online-dot" />
           </div>
           <div className="chatbot-header-info">
             <h3 className="chatbot-header-name">Agnes-Tachyon</h3>
             <p className="chatbot-header-status">
               <span className="chatbot-status-pulse" />
-              Online · AI Assistant
+              Online
             </p>
           </div>
           <div className="chatbot-header-actions">
-            <button
-              onClick={() => setIsOpen(false)}
-              className="chatbot-icon-btn"
-              aria-label="Minimize"
-            >
-              <Minimize2 size={16} />
-            </button>
             <button
               onClick={() => setIsOpen(false)}
               className="chatbot-icon-btn"
