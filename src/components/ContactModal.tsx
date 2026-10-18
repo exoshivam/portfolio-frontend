@@ -708,12 +708,12 @@ function SubjectField({ value, onChange, name, message, onApply }: {
 // Mirrors the server's rules so visitors get instant feedback; the server checks again by content.
 const ATTACH_EXT = ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.docx', '.txt'];
 const MAX_FILES = 3;
-const MAX_FILE = 5 * 1024 * 1024;
-const MAX_TOTAL = 10 * 1024 * 1024;
+const MAX_FILE = 4 * 1024 * 1024;
+const MAX_TOTAL = 4 * 1024 * 1024; // the backend (AWS Lambda) accepts about 6 MB per request
 
 const fmtSize = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
 
-/** Optional files for the message: up to 3 PDFs, images, DOCX or TXT, 5 MB each, 10 MB total. */
+/** Optional files for the message: up to 3 PDFs, images, DOCX or TXT, 4 MB in total. */
 function Attachments({ files, onChange }: { files: File[]; onChange: (f: File[]) => void }) {
   const [error, setError] = useState('');
 
@@ -724,12 +724,12 @@ function Attachments({ files, onChange }: { files: File[]; onChange: (f: File[])
       const ext = f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
       if (!ATTACH_EXT.includes(ext)) return setError(`${f.name}: only PDF, PNG, JPG, WEBP, DOCX and TXT files are allowed`);
       if (f.size === 0) return setError(`${f.name} is empty`);
-      if (f.size > MAX_FILE) return setError(`${f.name} is larger than 5 MB`);
+      if (f.size > MAX_FILE) return setError(`${f.name} is larger than 4 MB`);
       if (next.some((x) => x.name === f.name && x.size === f.size)) continue; // already added
       if (next.length >= MAX_FILES) return setError(`You can attach up to ${MAX_FILES} files`);
       next.push(f);
     }
-    if (next.reduce((n, f) => n + f.size, 0) > MAX_TOTAL) return setError('Attachments can be at most 10 MB in total');
+    if (next.reduce((n, f) => n + f.size, 0) > MAX_TOTAL) return setError('Attachments can be at most 4 MB in total');
     setError('');
     onChange(next);
   };
@@ -762,7 +762,7 @@ function Attachments({ files, onChange }: { files: File[]; onChange: (f: File[])
             />
           </label>
         )}
-        <span className="text-[11px] text-gray-500">PDF, images, DOCX or TXT · up to 3 files, 5 MB each</span>
+        <span className="text-[11px] text-gray-500">PDF, images, DOCX or TXT · up to 3 files, 4 MB in total</span>
       </div>
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
