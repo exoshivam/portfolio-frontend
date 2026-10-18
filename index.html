@@ -1,16 +1,73 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/src/assets/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Shivam</title>
-    <meta property="og:image" content="https://bolt.new/static/og_default.png" />
+    <title>Shivam Kumar Yadav · Full Stack Developer</title>
+    <meta name="description" content="Shivam Kumar Yadav, full stack developer in Noida, India. Projects in React, Go, Node.js, Python and AI/LLM, plus hackathons, IoT work and experience. Chat with his AI assistant or get in touch." />
+    <meta name="author" content="Shivam Kumar Yadav" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="canonical" href="https://shivam-yadav.in/" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+
+    <!-- Link previews (LinkedIn, WhatsApp, X, Slack...). These apps don't run JavaScript, so the tags live here. -->
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content="Shivam Kumar Yadav" />
+    <meta property="og:url" content="https://shivam-yadav.in/" />
+    <meta property="og:title" content="Shivam Kumar Yadav · Full Stack Developer" />
+    <meta property="og:description" content="Projects, experience and skills: React, Go, Node.js, Python and AI. Based in Noida, India." />
+    <meta property="og:image" content="https://shivam-yadav.in/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Shivam Kumar Yadav, Full Stack Developer" />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="profile:first_name" content="Shivam" />
+    <meta property="profile:last_name" content="Yadav" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://bolt.new/static/og_default.png" />
+    <meta name="twitter:title" content="Shivam Kumar Yadav · Full Stack Developer" />
+    <meta name="twitter:description" content="Projects, experience and skills: React, Go, Node.js, Python and AI. Based in Noida, India." />
+    <meta name="twitter:image" content="https://shivam-yadav.in/og-image.jpg" />
+
+    <!-- Structured data: tells search engines who this page is about. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ProfilePage",
+        "url": "https://shivam-yadav.in/",
+        "mainEntity": {
+          "@type": "Person",
+          "name": "Shivam Kumar Yadav",
+          "alternateName": "developer_shivam2106",
+          "jobTitle": "Full Stack Developer",
+          "url": "https://shivam-yadav.in/",
+          "image": "https://shivam-yadav.in/og-image.jpg",
+          "address": { "@type": "PostalAddress", "addressLocality": "Noida", "addressCountry": "IN" },
+          "knowsAbout": ["React", "Go", "Node.js", "Python", "MongoDB", "FastAPI", "LangChain", "LLMs", "IoT"],
+          "sameAs": ["https://linkedin.com/in/shivam-yadav2106", "https://github.com/exoshivam"]
+        }
+      }
+    </script>
+
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+    <script>
+      // Apply the saved theme before the first paint so there is no light/dark flash.
+      try {
+        var mode = JSON.parse(localStorage.getItem('darkMode') ?? 'true');
+        var dark = mode === 'system' ? matchMedia('(prefers-color-scheme: dark)').matches : mode !== false;
+        if (!dark) document.documentElement.classList.remove('dark');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>Shivam Kumar Yadav</h1>
+      <p>Full stack developer in Noida, India, working with React, Go, Node.js, Python and AI/LLMs.</p>
+      <p>Projects: Call Break, GoCorp, Rural School Attendance System, Mood Tracker, AI Career Mentor.</p>
+      <p><a href="https://linkedin.com/in/shivam-yadav2106">LinkedIn</a> · <a href="https://github.com/exoshivam">GitHub</a> · <a href="mailto:meetskymau@gmail.com">meetskymau@gmail.com</a></p>
+      <p>This portfolio needs JavaScript to show everything.</p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

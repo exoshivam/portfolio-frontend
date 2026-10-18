@@ -1,52 +1,80 @@
-import { useState, useEffect } from 'react';
-import { Instagram, Home, Search, Compass, Mail, Settings, Menu, Download, LogOut } from 'lucide-react';
-import ContactModal from './ContactModal';
-import SettingsModal from './SettingsModal';
-import ExploreModal from './ExploreModal';
-import SearchModal from './SearchModal';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { Instagram, Home, Search, Compass, Briefcase, Mail, Settings, Menu, Download, LogOut, TerminalSquare, Bell } from 'lucide-react';
+import { useStore } from '../lib/store';
+
+// Each panel's code is downloaded the first time it is opened, not on page load.
+const ContactModal = lazy(() => import('./ContactModal'));
+const SettingsModal = lazy(() => import('./SettingsModal'));
+const ExploreModal = lazy(() => import('./ExploreModal'));
+const ExperienceModal = lazy(() => import('./ExperienceModal'));
 
 interface SidebarProps {
-  isLoggedIn: boolean;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   onModalClose?: () => void;
   onThemeChange?: (darkMode: boolean) => void;
-  onLogout?: () => void;
-  onSignIn?: () => void;
 }
 
-export default function Sidebar({ isLoggedIn, activeTab, onTabChange, onModalClose, onThemeChange, onLogout, onSignIn }: SidebarProps) {
+export default function Sidebar({ activeTab, onTabChange, onModalClose, onThemeChange }: SidebarProps) {
+  const { user, logout, setSignInOpen, setTerminalOpen, setInboxOpen, unread, setSearchOpen, openTab, setOpenTab } = useStore();
+  const isLoggedIn = !!user;
   const [isOpen, setIsOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isExploreOpen, setIsExploreOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [user, setUser] = useState<{ username: string; email: string } | null>(null);
+  const [experienceFocus, setExperienceFocus] = useState<string | undefined>();
+  const [isExperienceOpen, setIsExperienceOpen] = useState(false);
+  // Panels stay mounted after their first open so their slide animations keep working.
+  const [opened, setOpened] = useState<Set<string>>(new Set());
+  const markOpened = (name: string) => setOpened((o) => (o.has(name) ? o : new Set(o).add(name)));
   const [previousTab, setPreviousTab] = useState<string>('Home');
 
+  // Only the page-level sidebar (not the copies inside open pages) handles open requests.
   useEffect(() => {
-    // Update user info whenever login state changes
-    if (isLoggedIn) {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try {
-          setUser(JSON.parse(userStr));
-        } catch (error) {
-          console.error('Error parsing user:', error);
-        }
-      }
+    if (!openTab || onModalClose) return;
+    setOpenTab(null);
+    setPreviousTab(activeTab || 'Home');
+    onTabChange?.(openTab.tab);
+    if (openTab.tab === 'Explore') {
+      markOpened('explore');
+      setIsExploreOpen(true);
+    } else if (openTab.tab === 'Experience') {
+      setExperienceFocus(openTab.target);
+      markOpened('experience');
+      setIsExperienceOpen(true);
+    } else if (openTab.tab === 'Settings') {
+      markOpened('settings');
+      setIsSettingsOpen(true);
     } else {
-      setUser(null);
+      markOpened('contact');
+      setIsContactOpen(true);
     }
-  }, [isLoggedIn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openTab]);
+
+  // Inside an open page, switching to another page closes this one and lets the page-level sidebar open
+  // the next, so only one page is ever open (Home then really goes home).
+  const openPage = (tab: 'Explore' | 'Experience' | 'Contact' | 'Settings', open: () => void) => {
+    if (onModalClose) {
+      onModalClose();
+      setOpenTab({ tab });
+      return;
+    }
+    setPreviousTab(activeTab || 'Home');
+    onTabChange?.(tab);
+    open();
+  };
 
   const menuItems = [
     { icon: Home, label: 'Home', href: '#', onClick: () => { setPreviousTab('Home'); onTabChange?.('Home'); onModalClose?.(); } },
-    { icon: Search, label: 'Search', href: '#', onClick: () => { setPreviousTab(activeTab || 'Home'); onTabChange?.('Search'); setIsSearchOpen(true); } },
-    { icon: Compass, label: 'Explore', href: '#', onClick: () => { setPreviousTab(activeTab || 'Home'); onTabChange?.('Explore'); setIsExploreOpen(true); } },
-    { icon: Mail, label: 'Contact', href: '#', onClick: () => { setPreviousTab(activeTab || 'Home'); onTabChange?.('Contact'); setIsContactOpen(true); } },
-    { icon: Settings, label: 'Settings', href: '#', onClick: () => { console.log('Settings clicked'); setPreviousTab(activeTab || 'Home'); onTabChange?.('Settings'); setIsSettingsOpen(true); console.log('isSettingsOpen set to true'); } },
-  ];
+    { icon: Search, label: 'Search', href: '#', hint: '/', onClick: () => { setIsOpen(false); setSearchOpen(true); } },
+    { icon: Compass, label: 'Explore', href: '#', onClick: () => openPage('Explore', () => { markOpened('explore'); setIsExploreOpen(true); }) },
+    { icon: Briefcase, label: 'Experience', href: '#', onClick: () => openPage('Experience', () => { markOpened('experience'); setIsExperienceOpen(true); }) },
+    { icon: Mail, label: 'Contact', href: '#', onClick: () => openPage('Contact', () => { markOpened('contact'); setIsContactOpen(true); }) },
+    { icon: Settings, label: 'Settings', href: '#', onClick: () => openPage('Settings', () => { markOpened('settings'); setIsSettingsOpen(true); }) },
+    { icon: TerminalSquare, label: 'Terminal', href: '#', hint: '⌘K', onClick: () => { setIsOpen(false); setTerminalOpen(true); } },
+    ...(user?.isAdmin ? [{ icon: Bell, label: 'Inbox', href: '#', badge: unread, onClick: () => { setIsOpen(false); setInboxOpen(true); } }] : []),
+  ] as { icon: typeof Home; label: string; href: string; onClick: () => void; hint?: string; badge?: number }[];
 
   return (
     <>
@@ -58,7 +86,7 @@ export default function Sidebar({ isLoggedIn, activeTab, onTabChange, onModalClo
       </button>
 
       <aside className={`
-        fixed lg:sticky lg:top-0 left-0 h-screen w-64 bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 z-40
+        fixed lg:sticky top-0 left-0 h-screen w-64 shrink-0 bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 z-40
         transform transition-transform duration-300 lg:translate-x-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         overflow-y-auto flex flex-col
@@ -98,6 +126,8 @@ export default function Sidebar({ isLoggedIn, activeTab, onTabChange, onModalClo
                     : 'text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white'
                 }`} />
                 <span className="text-lg">{item.label}</span>
+                {item.hint && <kbd className="ml-auto hidden lg:inline text-[10px] text-gray-500 border border-gray-300 dark:border-gray-700 rounded px-1.5 py-0.5">{item.hint}</kbd>}
+                {!!item.badge && <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">{item.badge}</span>}
               </a>
             );
           })}
@@ -106,10 +136,23 @@ export default function Sidebar({ isLoggedIn, activeTab, onTabChange, onModalClo
         {/* User Info Section */}
         {user && (
           <div className="p-6 border-t border-gray-200 dark:border-gray-800">
-            <div className="px-4 py-3 bg-gray-100 dark:bg-gray-900 rounded-lg">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Logged in as</p>
-              <p className="text-sm font-semibold text-black dark:text-white truncate">@{user.username}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+            <div className="px-4 py-3 bg-gray-100 dark:bg-gray-900/80 border border-gray-200/50 dark:border-gray-800 rounded-xl flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">Logged in as</p>
+                <p className="text-sm font-semibold text-black dark:text-white truncate">
+                  @{user.username}
+                  {user.isAdmin && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-orange-500 text-white align-middle">ADMIN</span>}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+              </div>
+              <button
+                onClick={logout}
+                title="Logout"
+                aria-label="Logout"
+                className="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
+              >
+                <LogOut size={16} />
+              </button>
             </div>
           </div>
         )}
@@ -119,32 +162,32 @@ export default function Sidebar({ isLoggedIn, activeTab, onTabChange, onModalClo
           <a
             href="/resume.pdf"
             download
-            className="w-full flex items-center justify-center gap-2 p-2.5 text-orange-500 hover:text-orange-400 transition-colors border border-orange-500 rounded-lg hover:bg-orange-500/10"
+            className="w-full flex items-center justify-center gap-2 p-2.5 text-orange-500 hover:text-orange-400 transition-colors border border-orange-500/40 rounded-lg hover:bg-orange-500/10"
             title="Download Resume"
           >
             <Download size={20} />
-            <span className="font-semibold">Download CV</span>
+            <span className="font-semibold text-sm">Download CV</span>
           </a>
           {!isLoggedIn ? (
             <button
               onClick={() => {
-                onSignIn?.();
+                setSignInOpen(true);
                 setIsOpen(false);
               }}
-              className="w-full px-6 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
+              className="w-full px-5 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold text-sm rounded-lg transition-all duration-200"
             >
               Sign In
             </button>
           ) : (
             <button
               onClick={() => {
-                onLogout?.();
+                logout();
                 setIsOpen(false);
               }}
-              className="w-full px-6 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+              className="w-full flex items-center justify-center gap-2 p-2.5 text-red-500 hover:text-red-400 transition-colors border border-red-500/30 rounded-lg hover:bg-red-500/10 font-medium text-sm"
             >
-              <LogOut size={18} />
-              Logout
+              <LogOut size={16} />
+              <span>Logout</span>
             </button>
           )}
         </div>
@@ -157,10 +200,12 @@ export default function Sidebar({ isLoggedIn, activeTab, onTabChange, onModalClo
         />
       )}
 
-      <ContactModal isOpen={isContactOpen} onClose={() => { setIsContactOpen(false); onTabChange?.(previousTab); }} />
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => { setIsSettingsOpen(false); onTabChange?.(previousTab); }} onThemeChange={onThemeChange} />
-      <ExploreModal isOpen={isExploreOpen} onClose={() => { setIsExploreOpen(false); onTabChange?.(previousTab); }} activeTab={activeTab} onTabChange={onTabChange} />
-      <SearchModal isOpen={isSearchOpen} onClose={() => { setIsSearchOpen(false); onTabChange?.(previousTab); }} />
+      <Suspense fallback={null}>
+        {opened.has('contact') && <ContactModal isOpen={isContactOpen} onClose={() => { setIsContactOpen(false); onTabChange?.(previousTab); }} activeTab={activeTab} onTabChange={onTabChange} />}
+        {opened.has('settings') && <SettingsModal isOpen={isSettingsOpen} onClose={() => { setIsSettingsOpen(false); onTabChange?.(previousTab); }} onThemeChange={onThemeChange} activeTab={activeTab} onTabChange={onTabChange} />}
+        {opened.has('explore') && <ExploreModal isOpen={isExploreOpen} onClose={() => { setIsExploreOpen(false); onTabChange?.(previousTab); }} activeTab={activeTab} onTabChange={onTabChange} />}
+        {opened.has('experience') && <ExperienceModal isOpen={isExperienceOpen} focusId={experienceFocus} onClose={() => { setIsExperienceOpen(false); setExperienceFocus(undefined); onTabChange?.(previousTab); }} activeTab={activeTab} onTabChange={onTabChange} />}
+      </Suspense>
     </>
   );
 }

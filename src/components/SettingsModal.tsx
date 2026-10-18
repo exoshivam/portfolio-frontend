@@ -1,220 +1,177 @@
-import { useState, useEffect } from 'react';
-import { Settings, Moon, Sun, Download, Globe, X } from 'lucide-react';
+import { lazy, Suspense, useState, type ReactNode } from 'react';
+import { ChevronDown, Download, FileText, Globe, Info, Moon, Settings } from 'lucide-react';
+import { getThemeMode, setThemeMode, type ThemeMode } from '../lib/theme';
+import { useStore } from '../lib/store';
+import Sidebar from './Sidebar';
+
+const BlockedUsers = lazy(() => import('./BlockedUsers'));
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onThemeChange?: (darkMode: boolean) => void;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-export default function SettingsModal({ isOpen, onClose, onThemeChange }: SettingsModalProps) {
-  const [darkMode, setDarkMode] = useState(true);
-  const [accentColor, setAccentColor] = useState<'orange' | 'pink' | 'blue'>('orange');
+function Card({ icon, title, hint, children, className = '' }: { icon: ReactNode; title: string; hint: string; children: ReactNode; className?: string }) {
+  return (
+    <section className={`flex flex-col xl:min-h-0 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d1117] p-6 ${className}`}>
+      <div className="flex items-start gap-4">
+        <span className="shrink-0 text-orange-500">{icon}</span>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg font-semibold text-black dark:text-white">{title}</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{hint}</p>
+        </div>
+      </div>
+      <div className="mt-6 flex-1 xl:min-h-0 flex flex-col">{children}</div>
+    </section>
+  );
+}
 
-  // Load settings from localStorage on mount
-  useEffect(() => {
-    console.log('SettingsModal mounted, isOpen:', isOpen);
-    const savedDarkMode = localStorage.getItem('darkMode');
-    const savedAccentColor = localStorage.getItem('accentColor');
-    
-    console.log('Saved darkMode from localStorage:', savedDarkMode);
-    console.log('Document dark class:', document.documentElement.classList.contains('dark'));
-    
-    if (savedDarkMode !== null) setDarkMode(JSON.parse(savedDarkMode));
-    if (savedAccentColor) {
-      const color = savedAccentColor as 'orange' | 'pink' | 'blue';
-      setAccentColor(color);
-      applyAccentColor(color);
-    }
-  }, [isOpen]);
+/** A small drawing of the portfolio in light or dark for the theme cards. */
+function MiniPage({ dark, split }: { dark: boolean; split?: boolean }) {
+  if (split)
+    return (
+      <span className="flex-1 min-h-16 relative flex rounded-xl overflow-hidden">
+        <MiniPage dark={false} />
+        <span className="absolute inset-0 flex [clip-path:inset(0_0_0_50%)]"><MiniPage dark /></span>
+      </span>
+    );
+  const line = dark ? 'bg-gray-700' : 'bg-gray-200';
+  const panel = dark ? 'bg-gray-800' : 'bg-gray-100';
+  return (
+    <span className={`flex-1 min-h-16 flex flex-col rounded-xl border p-3 gap-2 ${dark ? 'bg-[#0b0e14] border-white/10' : 'bg-white border-gray-200'}`}>
+      <span className="flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full bg-orange-500" />
+        <span className={`w-2 h-2 rounded-full ${dark ? 'bg-orange-300' : 'bg-gray-300'}`} />
+        <span className="ml-2 h-1.5 w-1/4 rounded bg-gradient-to-r from-orange-500 to-pink-500" />
+        <span className={`h-1.5 flex-1 rounded ${line}`} />
+      </span>
+      <span className="flex-1 flex gap-2">
+        <span className="w-1/5 space-y-1.5 pt-1">
+          <span className={`block h-1.5 rounded ${line}`} />
+          <span className={`block h-1.5 rounded ${line}`} />
+          <span className={`block h-1.5 rounded ${line}`} />
+          <span className={`block h-1.5 w-2/3 rounded ${line}`} />
+        </span>
+        <span className={`flex-1 rounded-md ${panel}`} />
+        <span className={`flex-1 rounded-md ${panel}`} />
+      </span>
+    </span>
+  );
+}
 
-  // Save settings to localStorage
-  const handleDarkModeToggle = () => {
-    const newDarkMode = !darkMode;
-    console.log('Toggle clicked! Current:', darkMode, 'New:', newDarkMode);
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
-    
-    // Apply theme to document
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark');
-      console.log('Added dark class');
-    } else {
-      document.documentElement.classList.remove('dark');
-      console.log('Removed dark class');
-    }
-    
-    // Emit callback to parent
-    if (onThemeChange) {
-      console.log('Calling onThemeChange with:', newDarkMode);
-      onThemeChange(newDarkMode);
-    }
+/** Settings as a full page next to the sidebar, like Contact and Explore. Fits one screen on desktop. */
+export default function SettingsModal({ isOpen, onClose, onThemeChange, activeTab, onTabChange }: SettingsModalProps) {
+  const { user, feed } = useStore();
+  const [mode, setMode] = useState<ThemeMode>(getThemeMode);
+
+  const setTheme = (next: ThemeMode) => {
+    setMode(next);
+    onThemeChange?.(setThemeMode(next));
   };
-
-  const handleAccentColorChange = (color: 'orange' | 'pink' | 'blue') => {
-    setAccentColor(color);
-    localStorage.setItem('accentColor', color);
-    applyAccentColor(color);
-  };
-
-  const applyAccentColor = (color: 'orange' | 'pink' | 'blue') => {
-    const colorMap = {
-      orange: { primary: '249, 115, 22', secondary: '236, 72, 153' },
-      pink: { primary: '236, 72, 153', secondary: '225, 29, 72' },
-      blue: { primary: '59, 130, 246', secondary: '34, 197, 94' },
-    };
-    
-    const colors = colorMap[color];
-    document.documentElement.style.setProperty('--accent-primary', colors.primary);
-    document.documentElement.style.setProperty('--accent-secondary', colors.secondary);
-    document.documentElement.setAttribute('data-accent', color);
-  };
-
-  const handleDownloadResume = () => {
-    // Create a simple download link - replace with actual resume URL
-    const resumeUrl = '/resume.pdf';
-    const link = document.createElement('a');
-    link.href = resumeUrl;
-    link.download = 'resume.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const accentColors = [
-    { name: 'orange', gradient: 'from-orange-500 to-pink-500', label: 'Orange' },
-    { name: 'pink', gradient: 'from-pink-500 to-rose-500', label: 'Pink' },
-    { name: 'blue', gradient: 'from-blue-500 to-cyan-500', label: 'Blue' },
-  ];
 
   if (!isOpen) return null;
+  const name = feed?.profile?.full_name ? feed.profile.full_name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : 'Shivam Kumar Yadav';
 
   return (
-    <div
-      className="fixed inset-0 bg-black/90 dark:bg-white/10 z-50 flex items-center justify-center p-4 overflow-y-auto"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl max-w-2xl w-full my-2 sm:my-8 max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-black rounded-t-2xl">
-          <div className="flex items-center gap-4">
-            <div className="inline-block p-2 sm:p-3 accent-gradient rounded-full">
-              <Settings size={20} className="sm:w-6 sm:h-6" />
-            </div>
-            <h1 className="text-xl sm:text-2xl font-light text-black dark:text-white">Settings</h1>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg transition-colors flex-shrink-0"
-          >
-            <X size={20} className="sm:w-6 sm:h-6" />
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-white dark:bg-[#07090d] z-50 overflow-hidden flex flex-col lg:flex-row">
+      <Sidebar activeTab={activeTab} onTabChange={onTabChange} onModalClose={onClose} />
 
-        {/* Content */}
-        <div className="p-4 sm:p-6 space-y-8 overflow-y-auto flex-1">
-          {/* Dark/Light Mode */}
+      <main className="flex-1 min-w-0 overflow-y-auto flex flex-col px-4 sm:px-8 lg:px-10 pt-24 lg:pt-6 pb-6">
+        <header className="flex items-center gap-5 mb-5">
+          <span className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-pink-500 text-white shadow-lg shadow-orange-500/20">
+            <Settings size={32} />
+          </span>
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2 text-black dark:text-white">
-                  {darkMode ? <Moon size={20} /> : <Sun size={20} />}
-                  Theme
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Choose your preferred display mode</p>
-              </div>
-              <button
-                onClick={handleDarkModeToggle}
-                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                  darkMode ? 'bg-gradient-to-r from-orange-500 to-pink-500' : 'bg-gray-400'
-                }`}
-              >
-                <span
-                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                    darkMode ? 'translate-x-7' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Current mode: <span className="text-black dark:text-white font-semibold">{darkMode ? 'Dark' : 'Light'}</span>
-            </p>
+            <h1 className="text-4xl font-bold text-black dark:text-white">Settings</h1>
+            <p className="mt-1 text-gray-600 dark:text-gray-400">Make the portfolio look and work the way you like. Saved in this browser.</p>
           </div>
+        </header>
 
-          {/* Accent Color */}
-          <div>
-            <div>
-              <h2 className="text-lg font-semibold mb-4 text-black dark:text-white">Accent Color (Upcoming Feature)</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Customize your portfolio's accent color</p>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              {accentColors.map((color) => (
+        <div className="xl:flex-1 xl:min-h-0 grid gap-6 grid-cols-1 xl:grid-rows-[minmax(17rem,1fr)_auto]">
+          <Card icon={<Moon size={30} />} title="Theme" hint="Choose your preferred display mode.">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1 xl:min-h-0">
+              {(
+                [
+                  { m: 'light', label: 'Light', sub: 'Clean and minimal' },
+                  { m: 'dark', label: 'Dark', sub: 'Easy on the eyes' },
+                  { m: 'system', label: 'System', sub: 'Follow your OS' },
+                ] as const
+              ).map((o) => (
                 <button
-                  key={color.name}
-                  onClick={() => handleAccentColorChange(color.name as 'orange' | 'pink' | 'blue')}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    accentColor === color.name
-                      ? `border-black dark:border-white bg-gradient-to-br ${color.gradient}`
-                      : 'border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 hover:border-gray-400 dark:hover:border-gray-600'
+                  key={o.m}
+                  onClick={() => setTheme(o.m)}
+                  aria-pressed={mode === o.m}
+                  className={`flex flex-col gap-3 min-h-0 rounded-2xl border-2 p-3 text-left transition-colors ${
+                    mode === o.m
+                      ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_24px_-6px] shadow-orange-500/40'
+                      : 'border-gray-200 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/25'
                   }`}
                 >
-                  <div className={`h-8 rounded-full bg-gradient-to-br ${color.gradient} mb-2`} />
-                  <p className="text-sm font-semibold text-black dark:text-white">{color.label}</p>
-                  {accentColor === color.name && <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Active</p>}
+                  <MiniPage dark={o.m === 'dark'} split={o.m === 'system'} />
+                  <span className="flex items-center gap-3 px-1">
+                    <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${mode === o.m ? 'border-orange-500' : 'border-gray-400 dark:border-gray-600'}`}>
+                      {mode === o.m && <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-orange-500 to-pink-500" />}
+                    </span>
+                    <span>
+                      <span className="block font-semibold text-black dark:text-white">{o.label}</span>
+                      <span className="block text-xs text-gray-500 dark:text-gray-400">{o.sub}</span>
+                    </span>
+                  </span>
                 </button>
               ))}
             </div>
-          </div>
+          </Card>
 
-          {/* Download Resume */}
-          <div>
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Download size={20} />
-                  Download Resume
-                </h2>
-                <p className="text-sm text-gray-400 mt-1">Download the resume in PDF format</p>
+          <div className={`grid gap-6 grid-cols-1 md:grid-cols-2 ${user?.isAdmin ? 'xl:grid-cols-[1.25fr_1fr_0.85fr]' : ''}`}>
+            <Card icon={<Download size={30} />} title="Resume" hint="Download the resume in PDF format.">
+              <div className="flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#11161f] p-3">
+                <span className="p-3 rounded-full bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300">
+                  <FileText size={22} />
+                </span>
+                <span className="flex-1 min-w-[10rem]">
+                  <span className="block font-semibold text-black dark:text-white truncate">{name}</span>
+                  <span className="block text-sm text-gray-500 dark:text-gray-400">Full Stack Developer · Resume</span>
+                </span>
+                <a
+                  href="/resume.pdf"
+                  download
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90 whitespace-nowrap"
+                >
+                  <Download size={16} /> Download
+                </a>
               </div>
-              <button
-                onClick={handleDownloadResume}
-                className="px-6 py-2 accent-gradient-to-r rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap"
-              >
-                Download
-              </button>
-            </div>
-          </div>
+              <p className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <Info size={14} /> The latest resume is downloaded.
+              </p>
+            </Card>
 
-          {/* Language */}
-          <div>
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2 text-black dark:text-white">
-                  <Globe size={20} />
-                  Language
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Choose your preferred language</p>
-              </div>
-              <div className="bg-gradient-to-r from-orange-500 to-pink-500 px-4 py-2 rounded-lg">
-                <p className="text-sm font-semibold">Upcoming</p>
-              </div>
-            </div>
-            <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-800 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Language settings will be available soon. Currently, the portfolio is available in English.</p>
-            </div>
-          </div>
+            <Card icon={<Globe size={30} />} title="Language" hint="Choose your preferred language for the interface.">
+              <label className="relative flex items-center gap-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#11161f] px-4 py-3">
+                <Globe size={20} className="text-gray-500 dark:text-gray-400" />
+                <select aria-label="Language" defaultValue="en" className="flex-1 appearance-none bg-transparent font-medium text-black dark:text-white focus:outline-none cursor-pointer">
+                  <option value="en">English</option>
+                  <option value="hi" disabled>हिन्दी (coming soon)</option>
+                </select>
+                <ChevronDown size={18} className="pointer-events-none text-gray-500" />
+              </label>
+              <p className="mt-3 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <Info size={14} className="mt-0.5 shrink-0" /> Language settings will be available soon. Currently, the portfolio is available in English.
+              </p>
+            </Card>
 
-          {/* Settings Info */}
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
-            <p className="text-xs text-gray-500">
-              Your preferences are saved locally in your browser. They will be preserved across sessions.
-            </p>
+            {user?.isAdmin && (
+              <section className="md:col-span-2 xl:col-span-1 min-h-0 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#0d1117] p-6 max-h-72 overflow-y-auto">
+                <Suspense fallback={null}>
+                  <BlockedUsers />
+                </Suspense>
+              </section>
+            )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

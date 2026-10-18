@@ -1,22 +1,134 @@
-import { useState, useEffect } from 'react';
-import { Profile } from '../lib/mongodb';
-import { X } from 'lucide-react';
-import { ReactTyped }  from "react-typed";
+import { lazy, Suspense, useCallback, useState } from 'react';
+import { Camera, Loader2, Plus } from 'lucide-react';
+import { ReactTyped } from 'react-typed';
+import { api, img, liveStories, type Profile } from '../lib/api';
+import { MAX_FILE_MB, uploadToCloudinary, type UploadSignature } from '../lib/upload';
+import { useStore } from '../lib/store';
+import GravityName from './GravityName';
 
-interface ActiveProject {
-  _id: string;
-  title: string;
-  description: string;
-  image_urls: string[];
-  project_url: string;
-  technologies: string[];
-  status: string;
-  progress: number;
-  order_index: number;
+const ProfileStoryViewer = lazy(() => import('./ProfileStoryViewer'));
+const ProfileStoryEditor = lazy(() => import('./ProfileStoryEditor'));
+const OngoingProjects = lazy(() => import('./OngoingProjects'));
+
+const SEEN_KEY = 'seen_profile_stories';
+function readSeen(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]'));
+  } catch {
+    return new Set();
+  }
 }
 
-interface ProfileHeaderProps {
-  profile: Profile | null;
+/** Admin-only camera badge: uploads a new profile photo to Cloudinary and saves it. */
+function ChangePhoto() {
+  const { reloadFeed } = useStore();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const change = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return setError('Choose an image file');
+    if (file.size > MAX_FILE_MB * 1024 * 1024) return setError(`Image is larger than ${MAX_FILE_MB} MB`);
+    setError('');
+    setBusy(true);
+    try {
+      const sig = await api<UploadSignature>('/admin/upload-signature', 'POST');
+      const url = await uploadToCloudinary(file, sig);
+      await api('/profile/avatar', 'PUT', { avatar_url: url });
+      await reloadFeed();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not change the photo');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <label
+        title="Change profile photo"
+        className={`absolute bottom-2 left-2 w-9 h-9 rounded-full bg-gray-800 hover:bg-gray-700 border-4 border-white dark:border-black flex items-center justify-center text-white focus-within:ring-2 focus-within:ring-orange-500 ${busy ? 'pointer-events-none' : 'cursor-pointer'}`}
+      >
+        {busy ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="sr-only"
+          aria-label="Change profile photo"
+          disabled={busy}
+          onChange={(e) => {
+            void change(e.target.files?.[0]);
+            e.target.value = '';
+          }}
+        />
+      </label>
+      {error && <p role="alert" className="absolute -bottom-6 left-0 right-0 text-center text-xs text-red-500">{error}</p>}
+    </>
+  );
+}
+
+/** Profile photo with Instagram-style 24-hour stories: gradient ring while unseen ones exist. */
+function StoryAvatar({ profile }: { profile: Profile }) {
+  const { feed, user } = useStore();
+  const stories = liveStories(feed?.profile_stories);
+  const [seen, setSeen] = useState(readSeen);
+  const [viewing, setViewing] = useState<number | null>(null);
+  const [composing, setComposing] = useState(false);
+
+  const markSeen = useCallback((id: string) => {
+    setSeen((cur) => {
+      if (cur.has(id)) return cur;
+      const next = new Set(cur).add(id);
+      try {
+        localStorage.setItem(SEEN_KEY, JSON.stringify([...next]));
+      } catch {
+        // storage unavailable: the ring just won't remember
+      }
+      return next;
+    });
+  }, []);
+
+  const firstUnseen = stories.findIndex((s) => !seen.has(s._id));
+  const ring = !stories.length ? 'bg-transparent' : firstUnseen >= 0 ? 'bg-gradient-to-tr from-yellow-400 via-red-500 to-pink-500' : 'bg-gray-400 dark:bg-gray-600';
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => stories.length && setViewing(firstUnseen >= 0 ? firstUnseen : 0)}
+        disabled={!stories.length}
+        aria-label={stories.length ? `View ${profile.username}'s story` : profile.full_name}
+        className={`block rounded-full p-[4px] ${ring} disabled:cursor-default`}
+      >
+        <span className="block rounded-full bg-white dark:bg-black p-[4px]">
+          <img
+            src={img(profile.avatar_url, 320)}
+            alt={profile.full_name}
+            width={160}
+            height={160}
+            className="rounded-full w-32 h-32 md:w-40 md:h-40 object-cover"
+            style={{ objectPosition: '20% 0%' }}
+          />
+        </span>
+      </button>
+      {user?.isAdmin && <ChangePhoto />}
+      {user?.isAdmin && (
+        <button
+          onClick={() => setComposing(true)}
+          aria-label="Add to your story"
+          title="Add to your story (24 hours)"
+          className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-blue-500 hover:bg-blue-600 border-4 border-white dark:border-black flex items-center justify-center text-white"
+        >
+          <Plus size={18} strokeWidth={3} />
+        </button>
+      )}
+      <Suspense fallback={null}>
+        {viewing !== null && stories.length > 0 && (
+          <ProfileStoryViewer stories={stories} startSlide={Math.min(viewing, stories.length - 1)} onClose={() => setViewing(null)} onSeen={markSeen} />
+        )}
+        {composing && <ProfileStoryEditor onClose={() => setComposing(false)} />}
+      </Suspense>
+    </div>
+  );
 }
 
 const stringsToRender = [
@@ -26,76 +138,35 @@ const stringsToRender = [
   "Python"
 ]
 
-export default function ProfileHeader({ profile }: ProfileHeaderProps) {
+export default function ProfileHeader() {
+  const { feed } = useStore();
   const [showActiveProjects, setShowActiveProjects] = useState(false);
-  const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Fetch active projects on component mount
-  useEffect(() => {
-    const fetchActiveProjects = async () => {
-      try {
-        const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://portfolio-backend-zphz.onrender.com/api';
-        const response = await fetch(`${apiBaseUrl}/active-projects`);
-        if (response.ok) {
-          const data = await response.json();
-          setActiveProjects(data);
-        }
-      } catch (error) {
-        console.error('Error fetching active projects:', error);
-      }
-    };
 
-    fetchActiveProjects();
-  }, []);
+  const profile = feed?.profile;
+  if (!profile) {
+    return (
+      <div className="flex flex-col items-center md:flex-row md:items-start gap-8 md:gap-16 w-full px-4 py-8 animate-pulse" aria-busy="true">
+        <div className="rounded-full w-32 h-32 md:w-40 md:h-40 bg-gray-200 dark:bg-gray-800" />
+        <div className="flex-1 space-y-4 w-full max-w-sm">
+          <div className="h-5 w-40 rounded bg-gray-200 dark:bg-gray-800" />
+          <div className="h-4 w-60 rounded bg-gray-200 dark:bg-gray-800" />
+          <div className="h-4 w-48 rounded bg-gray-200 dark:bg-gray-800" />
+        </div>
+      </div>
+    );
+  }
 
-  // Refresh data and reset search when modal is opened
-  useEffect(() => {
-    if (showActiveProjects) {
-      const fetchActiveProjects = async () => {
-        try {
-          const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://portfolio-backend-zphz.onrender.com/api';
-          const response = await fetch(`${apiBaseUrl}/active-projects`);
-          if (response.ok) {
-            const data = await response.json();
-            setActiveProjects(data);
-          }
-        } catch (error) {
-          console.error('Error fetching active projects:', error);
-        }
-      };
-
-      fetchActiveProjects();
-      setSearchQuery('');
-    }
-  }, [showActiveProjects]);
-
-  if (!profile) return null;
-
-  const viewsCount = (profile as any).views_count ?? (profile as any).followers_count ?? 0;
+  const activeProjects = feed.active_projects;
+  const viewsCount = profile.views_count ?? 0;
+  const projectsCount = feed.posts.filter((p) => p.category === 'projects').length;
   const activeProjectsCount = activeProjects.length;
 
-  // Filter projects based on search query
-  const filteredProjects = activeProjects.filter(project =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.technologies.some(tech => tech.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   return (
     <>
       <div className="flex flex-col items-center md:flex-row md:items-start gap-8 md:gap-16 w-full px-4 py-8">
         <div className="flex-shrink-0">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-pink-500 p-3">
-              <div className="w-full h-full rounded-full bg-black"></div>
-            </div>
-            <img
-              src={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'https://portfolio-backend-zphz.onrender.com'}/public/uploads/avatar/profile.png`}
-              alt={profile.full_name}
-              className="relative rounded-full w-32 h-32 md:w-40 md:h-40 object-cover border-2 border-transparent" style={{ objectPosition: '20% 0%' }}
-            />
-          </div>
+          <StoryAvatar profile={profile} />
         </div>
 
         <div className="flex-1 text-center md:text-left">
@@ -105,7 +176,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
 
           <div className="flex justify-center md:justify-start gap-8 mb-6">
             <div className="text-center">
-              <div className="font-semibold text-black dark:text-white">{profile.projects_count}</div>
+              <div className="font-semibold text-black dark:text-white">{projectsCount}</div>
               <div className="text-gray-600 dark:text-gray-400 text-sm">projects</div>
             </div>
             <div className="text-center">
@@ -122,7 +193,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
           </div>
 
           <div className="space-y-1">
-            <div className="font-bold text-black dark:text-white">{profile.full_name}</div>
+            <GravityName text={profile.full_name} className="text-2xl md:text-3xl font-extrabold text-black dark:text-white pb-1" />
             <div className="text-gray-700 dark:text-gray-300 whitespace-pre-line"><ReactTyped strings={stringsToRender} typeSpeed={60}
         backSpeed={50} loop></ReactTyped></div>
             <div className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{profile.bio}</div>
@@ -157,85 +228,9 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
       </div>
 
       {/* Active Projects Modal */}
-      {showActiveProjects && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-md max-h-96 flex flex-col border border-gray-300 dark:border-gray-700">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700">
-              <h2 className="text-lg font-bold text-black dark:text-white">Following</h2>
-              <button
-                onClick={() => setShowActiveProjects(false)}
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            {/* Search Bar */}
-            <div className="p-4 border-b border-gray-300 dark:border-gray-700">
-              <input
-                type="text"
-                placeholder="Search projects..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-sm text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            {/* Projects List */}
-            <div className="flex-1 overflow-y-auto">
-              {filteredProjects.length > 0 ? (
-                filteredProjects.map((project) => (
-                  <a
-                    key={project._id}
-                    href={project.project_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border-b border-gray-200 dark:border-gray-800 last:border-b-0 cursor-pointer"
-                  >
-                    {/* Project Image */}
-                    <img
-                      src={project.image_urls[0]}
-                      alt={project.title}
-                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                    />
-
-                    {/* Project Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm text-black dark:text-white truncate">
-                        {project.title}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-full">
-                          {project.status}
-                        </span>
-                        <div className="flex-1 bg-gray-300 dark:bg-gray-700 rounded-full h-1.5 min-w-0">
-                          <div
-                            className="bg-gradient-to-r from-orange-500 to-pink-500 h-full rounded-full"
-                            style={{ width: `${project.progress}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
-                          {project.progress}%
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Following Button */}
-                    <button className="px-4 py-1 bg-black dark:bg-gray-200 text-white dark:text-gray-900 rounded-full text-sm font-semibold hover:opacity-80 transition-opacity flex-shrink-0">
-                      Following
-                    </button>
-                  </a>
-                ))
-              ) : (
-                <div className="flex items-center justify-center h-32 text-gray-600 dark:text-gray-400">
-                  <p className="text-sm">{searchQuery ? 'No projects found' : 'No active projects'}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        {showActiveProjects && <OngoingProjects onClose={() => setShowActiveProjects(false)} />}
+      </Suspense>
     </>
   );
 }
